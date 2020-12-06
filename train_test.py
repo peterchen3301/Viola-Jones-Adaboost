@@ -8,6 +8,7 @@ To train cascade classifier by given positive / negative sample path and rounds.
 import sys
 import numpy as np
 import os
+import json
 from haar_properties import get_haars
 from classifier_properties import Weak_Classifier, Strong_Classifier
 from image import png_gray
@@ -66,14 +67,17 @@ def train( _pos_dir : str, _neg_dir : str, rounds : int ):
             weights = opt_classifier.get_updated_weights()
         
         cascade.append(opt_classifier)
+        
+        print( ">>>>> Training complete <<<<<" )
     
-    sClassifier = Strong_Classifier( cascade )
-    
-    return sClassifier
+    return cascade
 
-def test( _pos_dir : str, _neg_dir : str, sClassifier : Strong_Classifier ):
+def test( _pos_dir : str, _neg_dir : str, cascade, rounds = None ):
     
     print( "##### Test Start #####" )
+    
+    if rounds:
+        cascade = cascade[:rounds]
     
     # Get sample images
     print( ">>>>> Loading test samples <<<<<" )
@@ -81,14 +85,78 @@ def test( _pos_dir : str, _neg_dir : str, sClassifier : Strong_Classifier ):
     print( "     total images : ", n_pos + n_neg, 
           ", positive images : ", n_pos, ", negative images : ", n_neg )
     
+    tp, tn, fp, fn = 0.0, 0.0, 0.0, 0.0
+    nDrops = 0.0
     
-    return
+    for img in imgs:
+        
+        for wClassifier in cascade:           
+            feature_val = wClassifier.feature.get_feature_val( img.integral )   
+            
+            # Test on positive sample image
+            if img.isPositive:
+                
+                if wClassifier.isHit(feature_val):
+                    tp += 1
+                    break
+                else:
+                    nDrops += 1
+                
+                fn += 1
+            
+            # Test on negative sample image
+            if not img.isPositive:
+                
+                if wClassifier.isHit(feature_val):
+                    tn += 1
+                    break
+                else:
+                    nDrops += 1
+                
+                fp += 1
+    
+    accuracy = (tp + tn) / (tp + tn + fp + fn)
+    true_positive_rate = tp / (tp + fp)
+    false_positive_rate = 1 - true_positive_rate
+    true_negative_rate = tn / (tn + fn)
+    false_negative_rate = 1 - true_negative_rate
+    
+    avg_drops = nDrops / len(imgs)
+    
+    print( "     accuracy of this classifier : ", accuracy )
+    print( "     true positive rate : ", true_positive_rate, 
+          ", false positive rate : ", false_positive_rate, 
+          ", true negative rate : ", true_negative_rate,
+          ", false negative rate : ", false_negative_rate,
+          ", average drops : ", avg_drops)
+    
+    return accuracy, ( true_positive_rate, false_positive_rate, 
+                      true_negative_rate, false_negative_rate )
 
+'''
 def test_one_image( image : png_gray, sClassifier : Strong_Classifier ):
     
-        
-    
     return 
+'''
+
+def save_cascade( cascade, save_path = None ):
+    
+    data = {}
+    
+    for i, classifier in enumerate(cascade):
+        
+        data[ 'classifier_' + str(i) ] = ({
+            'pattern' : str(classifier.feature.pattern),
+            'size' : str(classifier.feature.shape),
+            'upperleft' : str(classifier.feature.upperleft),
+            'threshold' : str(classifier.threshold),
+            'training_error' : str(classifier.error)
+            })
+        
+    with open( save_path + 'cascade_data.txt', 'w') as outfile:
+        json.dump(data, outfile)
+    
+    return True
 
 def load_samples( _pos_dir : str, _neg_dir : str ):
     

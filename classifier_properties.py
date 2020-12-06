@@ -9,9 +9,9 @@ Define classifier properties and operations
 
 class Weak_Classifier(object):
 
-    def __init__(self, haar, imaegs, weights):
+    def __init__(self, haar, images, weights):
         self.feature = haar
-        self.images = imaegs
+        self.images = images
         self.weights = weights
         self.polarity, self.threshold, self.feature_vals = self.get_best_threshold()
         self.predictions, self.error = self.predict()
@@ -102,7 +102,9 @@ class Weak_Classifier(object):
         
         return new_weights
 
+'''
 class Strong_Classifier(object):
 
-    def __init__(self, cascade : list(Weak_Classifier) ):
+    def __init__(self, cascade):
         self.weak_classifiers = cascade
+'''
