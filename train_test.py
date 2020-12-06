@@ -10,7 +10,7 @@ import numpy as np
 import os
 import json
 from haar_properties import get_haars
-from classifier_properties import Weak_Classifier, Strong_Classifier
+from classifier_properties import Weak_Classifier #, Strong_Classifier
 from image import png_gray
 
     
@@ -85,36 +85,34 @@ def test( _pos_dir : str, _neg_dir : str, cascade, rounds = None ):
     print( "     total images : ", n_pos + n_neg, 
           ", positive images : ", n_pos, ", negative images : ", n_neg )
     
-    tp, tn, fp, fn = 0.0, 0.0, 0.0, 0.0
+    tp, tn = 0.0, 0.0
     nDrops = 0.0
     
     for img in imgs:
         
-        for wClassifier in cascade:           
-            feature_val = wClassifier.feature.get_feature_val( img.integral )   
-            
-            # Test on positive sample image
-            if img.isPositive:
-                
+        # Test on positive sample image
+        if img.isPositive:
+        
+            for wClassifier in cascade:           
+                feature_val = wClassifier.feature.get_feature_val( img.integral )   
                 if wClassifier.isHit(feature_val):
                     tp += 1
                     break
                 else:
                     nDrops += 1
-                
-                fn += 1
             
-            # Test on negative sample image
-            if not img.isPositive:
-                
+        # Test on negative sample image
+        if not img.isPositive:
+            
+            for wClassifier in cascade:           
+                feature_val = wClassifier.feature.get_feature_val( img.integral )   
                 if wClassifier.isHit(feature_val):
                     tn += 1
                     break
                 else:
                     nDrops += 1
-                
-                fp += 1
-    
+                    
+    fp, fn = n_pos - tp, n_neg - tn
     accuracy = (tp + tn) / (tp + tn + fp + fn)
     true_positive_rate = tp / (tp + fp)
     false_positive_rate = 1 - true_positive_rate
@@ -129,6 +127,8 @@ def test( _pos_dir : str, _neg_dir : str, cascade, rounds = None ):
           ", true negative rate : ", true_negative_rate,
           ", false negative rate : ", false_negative_rate,
           ", average drops : ", avg_drops)
+    
+    print(tp,tn,fp,fn)
     
     return accuracy, ( true_positive_rate, false_positive_rate, 
                       true_negative_rate, false_negative_rate )
