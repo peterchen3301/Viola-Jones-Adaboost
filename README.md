@@ -6,3 +6,9 @@ To complete a training and testing procedure, simply run:
 main
 ```
 
+To have necessary packages installed, enter these in command line:
+```
+pip install numpy
+pip install matplotlib
+pip install opencv-python
+```
